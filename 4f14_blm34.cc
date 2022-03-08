@@ -2,6 +2,7 @@
 #include <string>
 #include <random>
 #include <time.h>
+#include <thread>
 
 class Item {
 public:
@@ -11,6 +12,7 @@ public:
 	Item() {
 		// Random int in range [0, 256]
 		intVal = rand() % 256;
+		
 		// Random str of length [3, 7] of random chars in range [a, z] (ascii range [97, 122])
 		int strLen = rand() % 5 + 3;
 		strVal.resize(strLen);
@@ -20,33 +22,38 @@ public:
 	}
 	
 	void print() {
-		std::cout << "Int: " << intVal << " \tStr: " << strVal << std::endl;
+		// Output the integer and string of the item
+		std::cout << "Int: " << intVal << "   \tStr: " << strVal << std::endl;
 	}
 };
 
 struct Node {
+	// A node in a double linked list
 	Item data;
 	Node *prev;
 	Node *next;
 };
 
-class DLL {
+class DoubleLinkedList {
 public:
 	Node *head;
 	Node *tail;
 	bool reversed;
 	
-	DLL() {
+	DoubleLinkedList() {
+		// Initialised as empty
 		head = NULL;
 		tail = NULL;
 		reversed = false;
 	}
 	
 	void reverse() {
+		// Toggle the reverse flag
 		reversed = (!reversed);
 	}
 	
 	bool empty() {
+		// Return true if the list is empty
 		if (head == NULL && tail == NULL) {
 			return true;
 		} else {
@@ -55,7 +62,7 @@ public:
 	}
 	
 	void push() {
-		if (reversed == false) {
+		if (reversed == false) { // Add a new item to the end of the list
 			Node *newNode = new Node;
 			newNode->next = NULL;
 			newNode->prev = tail;
@@ -66,7 +73,7 @@ public:
 			if (head == NULL) {
 				head = newNode;
 			}
-		} else {
+		} else { // end is actually at the beginning
 			Node *newNode = new Node;
 			newNode->prev = NULL;
 			newNode->next = head;
@@ -80,33 +87,56 @@ public:
 		}
 	}
 	
-	Node* top() {
+	Item top() {
+		// Return the item at the front of the list
 		if (reversed == false) {
-			return head;
+			return head->data;
 		} else {
-			return tail;
+			return tail->data;
 		}
 	}
 	
 	void pop() {
+		// Remove the item from the front of the list
 		if ( !empty() ) {
 			if (reversed == false) {
-				head = head->next;
-				delete head->prev;
-				head->prev = NULL;
-			} else {
-				tail = tail->prev;
-				delete tail->next;
-				tail->next = NULL;
+				if (head->next != NULL){ // More than one item in the list
+					head = head->next;
+					delete head->prev;
+					head->prev = NULL;
+				} else { // Remove the last item in the array
+					delete head;
+					head = NULL;
+					tail = NULL;
+				}
+			} else { // Front of the list is actually the end
+				if (tail->prev != NULL) { // More than one item in the list
+					tail = tail->prev;
+					delete tail->next;
+					tail->next = NULL;
+				} else { // Remove the last item in the list
+					delete tail;
+					head = NULL;
+					tail = NULL;
+				}
 			}
 		}
 	}
 	
 	void traverse() {
-		Node* current = head;
-		while (current != NULL) {
-			current->data.print();
-			current = current->next;
+		// Print the data for each consecutive item in the list
+		if (reversed == false) {
+			Node* current = head;
+			while (current != NULL) {
+				current->data.print();
+				current = current->next;
+			}
+		} else {
+			Node* current = tail;
+			while (current != NULL) {
+				current->data.print();
+				current = current->prev;
+			}
 		}
 		std::cout << std::endl;
 	}
@@ -115,25 +145,14 @@ public:
 int main() {
 	// Set the random seed
 	srand ( (unsigned)time(NULL) );
+	//srand ( 0 );
 	
-	DLL dll;
-	dll.push();
-	dll.push();		
-	dll.push();
-	dll.push();	
-	std::cout << "Reverse\n" << std::endl;
-	dll.reverse();
-	dll.push();
-	dll.push();	
-	std::cout << "Reverse\n" << std::endl;
-	dll.reverse();
-	dll.traverse();
-	dll.pop();
-	dll.traverse();
-	std::cout << "Reverse\n" << std::endl;
-	dll.reverse();
-	dll.pop();
-	dll.traverse();
+	// Initialise queue with 80 items
+	DoubleLinkedList queue;
+	for (int i=1; i<=80; i++) {
+		queue.push();
+	}
+	queue.traverse();
 	
 	return 0;
 }
