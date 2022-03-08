@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include <stdlib.h>
+#include <random>
 #include <time.h>
 
 class Item {
@@ -18,17 +18,99 @@ public:
 			strVal[i] = rand() % 26 + 97;
 		}
 	}
+	
+	void print() {
+		std::cout << "Int: " << intVal << " \tStr: " << strVal << std::endl;
+	}
+};
+
+struct Node {
+	Item data;
+	Node *prev;
+	Node *next;
+};
+
+class DLL {
+public:
+	Node *head;
+	Node *tail;
+	bool reversed;
+	
+	DLL() {
+		head = NULL;
+		tail = NULL;
+		reversed = false;
+	}
+	
+	void reverse() {
+		reversed = (!reversed);
+	}
+	
+	bool empty() {
+		if (head == NULL && tail == NULL) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	void push() {
+		if (reversed == false) {
+			Node *newNode = new Node;
+			newNode->next = NULL;
+			newNode->prev = tail;
+			if (tail != NULL) {
+				tail->next = newNode;
+			}
+			tail = newNode;
+			if (head == NULL) {
+				head = newNode;
+			}
+		} else {
+			Node *newNode = new Node;
+			newNode->prev = NULL;
+			newNode->next = head;
+			if (head != NULL) {
+				head->prev = newNode;
+			}
+			head = newNode;
+			if (tail == NULL) {
+				tail = newNode;
+			}
+		}
+	}
+	
+	void traverse() {
+		Node* current = head;
+		while (current != NULL) {
+			current->data.print();
+			current = current->next;
+		}
+		std::cout << std::endl;
+	}
 };
 
 int main() {
 	// Set the random seed
 	srand ( (unsigned)time(NULL) );
-	// Generate 10 items and print their values
-	for (int i=0; i<10; i++) {
-		Item j;
-		std::cout << i << " Random num: " << j.intVal << std::endl;
-		std::cout << "  String: " << j.strVal << std::endl;
-		std::cout << std::endl;
-	}
+	
+	DLL dll;
+	
+	dll.traverse();
+	dll.push();
+	dll.traverse();
+	dll.push();	
+	dll.traverse();	
+	dll.push();
+	dll.traverse();
+	dll.push();	
+	dll.traverse();
+	std::cout << "Reverse\n" << std::endl;
+	dll.reverse();	
+	dll.push();
+	dll.traverse();
+	dll.push();	
+	dll.traverse();
+	
 	return 0;
 }
