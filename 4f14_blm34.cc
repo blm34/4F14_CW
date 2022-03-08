@@ -80,6 +80,28 @@ public:
 		}
 	}
 	
+	Node* top() {
+		if (reversed == false) {
+			return head;
+		} else {
+			return tail;
+		}
+	}
+	
+	void pop() {
+		if ( !empty() ) {
+			if (reversed == false) {
+				head = head->next;
+				delete head->prev;
+				head->prev = NULL;
+			} else {
+				tail = tail->prev;
+				delete tail->next;
+				tail->next = NULL;
+			}
+		}
+	}
+	
 	void traverse() {
 		Node* current = head;
 		while (current != NULL) {
@@ -95,21 +117,22 @@ int main() {
 	srand ( (unsigned)time(NULL) );
 	
 	DLL dll;
-	
-	dll.traverse();
 	dll.push();
-	dll.traverse();
-	dll.push();	
-	dll.traverse();	
+	dll.push();		
 	dll.push();
-	dll.traverse();
 	dll.push();	
+	std::cout << "Reverse\n" << std::endl;
+	dll.reverse();
+	dll.push();
+	dll.push();	
+	std::cout << "Reverse\n" << std::endl;
+	dll.reverse();
+	dll.traverse();
+	dll.pop();
 	dll.traverse();
 	std::cout << "Reverse\n" << std::endl;
-	dll.reverse();	
-	dll.push();
-	dll.traverse();
-	dll.push();	
+	dll.reverse();
+	dll.pop();
 	dll.traverse();
 	
 	return 0;
