@@ -29,7 +29,7 @@ public:
 
 struct Node {
 	// A node in a double linked list
-	Item data;
+	Item *data = new Item;
 	Node *prev;
 	Node *next;
 };
@@ -39,6 +39,7 @@ public:
 	Node *head;
 	Node *tail;
 	bool reversed;
+	int size = 0;
 	
 	DoubleLinkedList() {
 		// Initialised as empty
@@ -54,7 +55,7 @@ public:
 	
 	bool empty() {
 		// Return true if the list is empty
-		if (head == NULL && tail == NULL) {
+		if (head == NULL) {
 			return true;
 		} else {
 			return false;
@@ -85,9 +86,10 @@ public:
 				tail = newNode;
 			}
 		}
+		size++;
 	}
 	
-	Item top() {
+	Item* top() {
 		// Return the item at the front of the list
 		if (reversed == false) {
 			return head->data;
@@ -120,6 +122,7 @@ public:
 					tail = NULL;
 				}
 			}
+			size--;
 		}
 	}
 	
@@ -128,13 +131,13 @@ public:
 		if (reversed == false) {
 			Node* current = head;
 			while (current != NULL) {
-				current->data.print();
+				current->data->print();
 				current = current->next;
 			}
 		} else {
 			Node* current = tail;
 			while (current != NULL) {
-				current->data.print();
+				current->data->print();
 				current = current->prev;
 			}
 		}
