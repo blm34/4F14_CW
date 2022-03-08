@@ -3,6 +3,8 @@
 #include <random>
 #include <time.h>
 #include <thread>
+#include <mutex>
+#include <chrono>
 
 class Item {
 public:
@@ -32,6 +34,7 @@ struct Node {
 	Item *data = new Item;
 	Node *prev;
 	Node *next;
+	std::mutex m;
 };
 
 class DoubleLinkedList {
@@ -40,6 +43,9 @@ public:
 	Node *tail;
 	bool reversed;
 	int size = 0;
+	std::mutex m_head;
+	std::mutex m_tail;
+	std::mutex m_reversed;
 	
 	DoubleLinkedList() {
 		// Initialised as empty
@@ -63,7 +69,7 @@ public:
 	}
 	
 	void push() {
-		if (reversed == false) { // Add a new item to the end of the list
+		if (!reversed) { // Add a new item to the end of the list
 			Node *newNode = new Node;
 			newNode->next = NULL;
 			newNode->prev = tail;
@@ -91,7 +97,7 @@ public:
 	
 	Item* top() {
 		// Return the item at the front of the list
-		if (reversed == false) {
+		if (!reversed) {
 			return head->data;
 		} else {
 			return tail->data;
@@ -101,7 +107,7 @@ public:
 	void pop() {
 		// Remove the item from the front of the list
 		if ( !empty() ) {
-			if (reversed == false) {
+			if (!reversed) {
 				if (head->next != NULL){ // More than one item in the list
 					head = head->next;
 					delete head->prev;
@@ -128,7 +134,7 @@ public:
 	
 	void traverse() {
 		// Print the data for each consecutive item in the list
-		if (reversed == false) {
+		if (!reversed) {
 			Node* current = head;
 			while (current != NULL) {
 				current->data->print();
@@ -145,17 +151,88 @@ public:
 	}
 };
 
+void thread3(DoubleLinkedList& queue) {
+	auto nextRunTime = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(200);
+	while (!queue.empty()) {
+		// Wait for 0.2 seconds to have elapsed since last delete
+		while (std::chrono::high_resolution_clock::now() < nextRunTime) {}
+		
+		// Increment the next run time by 0.2 seconds
+		nextRunTime = nextRunTime + std::chrono::milliseconds(200);
+		
+		// Delete a random item from the queue
+		if (queue.size == 1) {
+			delete queue.head;
+			queue.head = NULL;
+			queue.tail = NULL;
+		} else {
+			int index = rand() % queue.size;
+			if (!queue.reversed) {
+				if (index == 0) {
+					// Delete the head
+					queue.head = queue.head->next;
+					delete queue.head->prev;
+					queue.head->prev = NULL;				
+				} else if (index == queue.size-1) {
+					// Delete the tail
+					queue.tail = queue.tail->prev;
+					delete queue.tail->next;
+					queue.tail->next = NULL;
+				} else {
+					// Delete the index th element from the head
+					Node* delNode = queue.head;
+					for (int i=0; i<index; i++) {
+						delNode = delNode->next;
+					}
+					delNode->prev->next = delNode->next;
+					delNode->next->prev = delNode->prev;
+					delete delNode;
+				}
+			} else { // The queue is reversed
+				if (index == 0) {
+					// Delete the tail
+					queue.tail = queue.tail->prev;
+					delete queue.tail->next;
+					queue.tail->next = NULL;
+				} else if (index == queue.size-1) {
+					// Delete the head
+					queue.head = queue.head->next;
+					delete queue.head->prev;
+					queue.head->prev = NULL;
+				} else {
+					// Delete the index th element from the tail
+					Node* delNode = queue.tail;
+					for (int i=0; i<index; i++) {
+						delNode = delNode->prev;
+					}
+					delNode->prev->next = delNode->next;
+					delNode->next->prev = delNode->prev;
+					delete delNode;
+				}
+			}
+			std::cout << "Deleted index " << index << std::endl << std::endl;
+		}
+		queue.size--;
+		std::cout << "Length = " << queue.size << std::endl;
+		queue.traverse();
+	}	
+}
+
 int main() {
 	// Set the random seed
 	srand ( (unsigned)time(NULL) );
 	//srand ( 0 );
 	
 	// Initialise queue with 80 items
+	
 	DoubleLinkedList queue;
-	for (int i=1; i<=80; i++) {
+	for (int i=1; i<=5; i++) {
 		queue.push();
 	}
+	queue.reverse();
 	queue.traverse();
+	
+	thread3(queue);
 	
 	return 0;
 }
