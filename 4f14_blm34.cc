@@ -151,6 +151,12 @@ public:
 		}
 		std::cout << std::endl;
 	}
+	
+	void initialise(int length) {
+		for (int i=0; i<length; i++) {
+			push();
+		}
+	}
 };
 
 void thread1(DoubleLinkedList& queue) {
@@ -161,18 +167,21 @@ void thread1(DoubleLinkedList& queue) {
 		// Reverse the queue
 		queue.reverse();
 		
-		//Sum elements in the queue
+		// Sum elements in the queue
 		s = 0;
 		currentNode = queue.head;
 		while (currentNode != NULL) {
 			s += currentNode->data->intVal;
 			currentNode = currentNode->next;
 		}
+		
+		// Output the sum to console
 		std::cout << "Sum = " + std::to_string(s) + "\n";
+		
+		// Unlock and lock reversed mutex to allow access to other threads
 		lock_reversed.unlock();
 		lock_reversed.lock();
 	}
-	std::cout << "Thread 1 Finished\n";
 }
 
 void thread2(DoubleLinkedList& queue) {
@@ -243,7 +252,6 @@ void thread2(DoubleLinkedList& queue) {
 		// Lock `lock_reversed` to prevent an element being deleted between checking the list isn't empty and aquiring a lock on the first element
 		lock_reversed.lock();
 	}
-	std::cout << "Thread 2 Finished\n";
 }
 
 void thread3(DoubleLinkedList& queue) {
@@ -271,7 +279,6 @@ void thread3(DoubleLinkedList& queue) {
 			delete queue.head;
 			queue.head = NULL;
 			queue.tail = NULL;
-			std::cout << "Deleted final element\n";
 		} else {
 			int index = rand() % queue.size;
 			if (!queue.reversed) {
@@ -351,11 +358,9 @@ void thread3(DoubleLinkedList& queue) {
 					delete delNode;
 				}
 			}
-			std::cout << "Deleted index " + std::to_string(index) + "\n";
 		}
 		queue.size--;
 	}
-	std::cout << "Thread 3 Finished\n";
 }
 
 class thread_guard {
@@ -374,16 +379,10 @@ public:
 int main() {
 	// Set the random seed
 	srand ( (unsigned)time(NULL) );
-	//srand ( 0 );
 	
 	// Initialise queue with 80 items	
 	DoubleLinkedList queue;
-	for (int i=1; i<=25; i++) {
-		queue.push();
-	}
-	
-	// Print initialised queue
-	queue.traverse();
+	queue.initialise(80);
 	
 	// Start the reverse and sum thread
 	std::thread t1(thread1, std::ref(queue));
