@@ -364,6 +364,7 @@ void thread3(DoubleLinkedList& queue) {
 }
 
 class thread_guard {
+	// As shown in lectures
 	std::thread& t;
 public:
 	explicit thread_guard(std::thread& t_): t(t_){}
