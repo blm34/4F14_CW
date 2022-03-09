@@ -42,7 +42,8 @@ public:
 	Node *head;
 	Node *tail;
 	bool reversed;
-	int size = 0;
+	int size;
+	
 	std::mutex m_head;
 	std::mutex m_tail;
 	std::mutex m_reversed;
@@ -52,6 +53,7 @@ public:
 		head = NULL;
 		tail = NULL;
 		reversed = false;
+		size = 0;
 	}
 	
 	void reverse() {
@@ -218,21 +220,36 @@ void thread3(DoubleLinkedList& queue) {
 	}	
 }
 
+class thread_guard {
+	std::thread& t;
+public:
+	explicit thread_guard(std::thread& t_): t(t_){}
+	~thread_guard() {
+		if (t.joinable()) {
+			t.join();
+		}
+	}
+	thread_guard(thread_guard const&)=delete;
+	thread_guard& operator=(thread_guard const&)=delete;
+};
+
 int main() {
 	// Set the random seed
 	srand ( (unsigned)time(NULL) );
 	//srand ( 0 );
 	
-	// Initialise queue with 80 items
-	
+	// Initialise queue with 80 items	
 	DoubleLinkedList queue;
-	for (int i=1; i<=5; i++) {
+	for (int i=1; i<=6; i++) {
 		queue.push();
 	}
-	queue.reverse();
+	
 	queue.traverse();
 	
-	thread3(queue);
+	//thread3(queue);
+	
+	std::thread t3(thread3, std::ref(queue));
+	thread_guard g3(t3);
 	
 	return 0;
 }
