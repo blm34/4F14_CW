@@ -44,9 +44,9 @@ public:
 	bool reversed;
 	int size;
 	
+	std::mutex m_reversed;
 	std::mutex m_head;
 	std::mutex m_tail;
-	std::mutex m_reversed;
 	
 	DoubleLinkedList() {
 		// Initialised as empty
@@ -162,61 +162,105 @@ void thread3(DoubleLinkedList& queue) {
 		// Increment the next run time by 0.2 seconds
 		nextRunTime = nextRunTime + std::chrono::milliseconds(200);
 		
-		// Delete a random item from the queue
-		if (queue.size == 1) {
-			delete queue.head;
-			queue.head = NULL;
-			queue.tail = NULL;
-		} else {
-			int index = rand() % queue.size;
-			if (!queue.reversed) {
-				if (index == 0) {
-					// Delete the head
-					queue.head = queue.head->next;
-					delete queue.head->prev;
-					queue.head->prev = NULL;				
-				} else if (index == queue.size-1) {
-					// Delete the tail
-					queue.tail = queue.tail->prev;
-					delete queue.tail->next;
-					queue.tail->next = NULL;
-				} else {
-					// Delete the index th element from the head
-					Node* delNode = queue.head;
-					for (int i=0; i<index; i++) {
-						delNode = delNode->next;
+		{ // New scope so locked mutexs are unlocked after deletion is complete
+			std::lock_guard<std::mutex> g_reversed(queue.m_reversed); // Lock direction
+			
+			// Delete a random item from the queue
+			if (queue.size == 1) {
+				// Lock relevant nodes
+				std::lock_guard<std::mutex> g_head(queue.m_head);
+				std::lock_guard<std::mutex> g_tail(queue.m_tail);
+				std::lock_guard<std::mutex> g_delNode(queue.head->m);
+				
+				// Delete final node
+				delete queue.head;
+				queue.head = NULL;
+				queue.tail = NULL;
+			} else {
+				int index = rand() % queue.size;
+				if (!queue.reversed) {
+					if (index == 0) {
+						// Lock relevant nodes
+						std::lock_guard<std::mutex> g_head(queue.m_head);
+						std::lock_guard<std::mutex> g_delNode(queue.head->m);
+						std::lock_guard<std::mutex> g_nextNode(queue.head->next->m);						
+						
+						// Delete the head
+						queue.head = queue.head->next;
+						delete queue.head->prev;
+						queue.head->prev = NULL;				
+					} else if (index == queue.size-1) {
+						// Lock relevant nodes
+						std::lock_guard<std::mutex> g_tail(queue.m_tail);
+						std::lock_guard<std::mutex> g_prevNode(queue.tail->prev->m);
+						std::lock_guard<std::mutex> g_delNode(queue.tail->m);
+						
+						// Delete the tail
+						queue.tail = queue.tail->prev;
+						delete queue.tail->next;
+						queue.tail->next = NULL;
+					} else {
+						// Traverse list to the node to delete
+						Node* delNode = queue.head;
+						for (int i=0; i<index; i++) {
+							delNode = delNode->next;
+						}
+						
+						// Lock relevant nodes
+						std::lock_guard<std::mutex> g_prevNode(delNode->prev->m);
+						std::lock_guard<std::mutex> g_delNode(delNode->m);
+						std::lock_guard<std::mutex> g_nextNode(delNode->next->m);
+						
+						// Delete the index th element from the head
+						delNode->prev->next = delNode->next;
+						delNode->next->prev = delNode->prev;
+						delete delNode;
 					}
-					delNode->prev->next = delNode->next;
-					delNode->next->prev = delNode->prev;
-					delete delNode;
-				}
-			} else { // The queue is reversed
-				if (index == 0) {
-					// Delete the tail
-					queue.tail = queue.tail->prev;
-					delete queue.tail->next;
-					queue.tail->next = NULL;
-				} else if (index == queue.size-1) {
-					// Delete the head
-					queue.head = queue.head->next;
-					delete queue.head->prev;
-					queue.head->prev = NULL;
-				} else {
-					// Delete the index th element from the tail
-					Node* delNode = queue.tail;
-					for (int i=0; i<index; i++) {
-						delNode = delNode->prev;
+				} else { // The queue is reversed
+					if (index == 0) {
+						// Lock relevant nodes
+						std::lock_guard<std::mutex> g_tail(queue.m_tail);
+						std::lock_guard<std::mutex> g_delNode(queue.tail->m);
+						std::lock_guard<std::mutex> g_nextNode(queue.tail->prev->m);
+						
+						// Delete the tail
+						queue.tail = queue.tail->prev;
+						delete queue.tail->next;
+						queue.tail->next = NULL;
+					} else if (index == queue.size-1) {
+						// Lock relevant nodes
+						std::lock_guard<std::mutex> g_head(queue.m_head);
+						std::lock_guard<std::mutex> g_prevNode(queue.head->next->m);
+						std::lock_guard<std::mutex> g_delNode(queue.head->m);
+						
+						// Delete the head
+						queue.head = queue.head->next;
+						delete queue.head->prev;
+						queue.head->prev = NULL;
+					} else {
+						// Traverse list to the node to delete
+						Node* delNode = queue.tail;
+						for (int i=0; i<index; i++) {
+							delNode = delNode->prev;
+						}
+						
+						// Lock relevant nodes
+						std::lock_guard<std::mutex> g_prevNode(delNode->next->m);
+						std::lock_guard<std::mutex> g_delNode(delNode->m);
+						std::lock_guard<std::mutex> g_nextNode(delNode->prev->m);
+						
+						// Delete the index th element from the tail
+						delNode->prev->next = delNode->next;
+						delNode->next->prev = delNode->prev;
+						delete delNode;
 					}
-					delNode->prev->next = delNode->next;
-					delNode->next->prev = delNode->prev;
-					delete delNode;
 				}
+				std::cout << "Deleted index " << index << std::endl << std::endl;
 			}
-			std::cout << "Deleted index " << index << std::endl << std::endl;
+			queue.size--;
+			std::cout << "Length = " << queue.size << std::endl;
+			queue.traverse();
 		}
-		queue.size--;
-		std::cout << "Length = " << queue.size << std::endl;
-		queue.traverse();
 	}	
 }
 
@@ -244,10 +288,10 @@ int main() {
 		queue.push();
 	}
 	
+	// Print initialised queue
 	queue.traverse();
 	
-	//thread3(queue);
-	
+	// Start the deleting thread
 	std::thread t3(thread3, std::ref(queue));
 	thread_guard g3(t3);
 	
