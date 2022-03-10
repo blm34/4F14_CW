@@ -12,7 +12,7 @@ public:
 	std::string strVal;
 	
 	Item() {
-		// Random int in range [0, 256]
+		// Random int in range [0, 256)
 		intVal = rand() % 256;
 		
 		// Random str of length [3, 7] of random chars in range [a, z] (ascii range [97, 122])
@@ -175,11 +175,13 @@ void thread1(DoubleLinkedList& queue) {
 			currentNode = currentNode->next;
 		}
 		
+		// Unlock reversed mutex to allow other threads access
+		lock_reversed.unlock();
+		
 		// Output the sum to console
 		std::cout << "Sum = " + std::to_string(s) + "\n";
 		
-		// Unlock and lock reversed mutex to allow access to other threads
-		lock_reversed.unlock();
+		// relock reversed mutex for next iteration
 		lock_reversed.lock();
 	}
 }
